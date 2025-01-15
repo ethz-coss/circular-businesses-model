@@ -49,7 +49,7 @@ In this agent-based model, I aim to model circular practices in businesses. I sp
 
 Contributions are welcome! Please fork the repository, make your changes, and submit a pull request.
 
-## Licensing
+## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
 
