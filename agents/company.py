@@ -1,6 +1,6 @@
 from mesa import Agent
 from agents.consumer import ConsumerAgent
-from parameters import MAINTENANCE_COST, PRODUCTINO_COST_PER_UNIT_SCALE_FACTOR, WASTE_PENALTY, CIRCULARITY_SUBSIDY_SCALE_FACTOR, PRICE_CAP_LOW, PRICE_CAP_HIGH, NUM_CONSUMERS, RAW_PRICE_MULTIPLIER, MATERIAL_PURCHASE_LIMIT
+from parameters import MAINTENANCE_COST, PRODUCTION_COST_PER_UNIT_SCALE_FACTOR, WASTE_PENALTY, CIRCULARITY_SUBSIDY_SCALE_FACTOR, PRICE_CAP_LOW, PRICE_CAP_HIGH, NUM_CONSUMERS, RAW_PRICE_MULTIPLIER, MATERIAL_PURCHASE_LIMIT
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 import utils
 
@@ -8,7 +8,7 @@ class CompanyAgent(Agent):
 
     def __init__(self, model, raw_material, circularity=0, competition=0, color="red"):
         super().__init__(model)
-        self.money = 0 #INITIAL_MONEY
+        self.money = 0
         self.raw_material = raw_material
 
         self.circularity = circularity
@@ -26,25 +26,10 @@ class CompanyAgent(Agent):
 
         self.color = color
 
-        self.sol1_prices = []
-        self.sol2_prices = []
-        self.sol3_prices = []
-
-        self.sol1_quants = []
-        self.sol2_quants = []
-        self.sol3_quants = []
-
-        self.sol1_profits = []
-        self.sol2_profits = []
-        self.sol3_profits = []
-
     def has_supply(self):
         return self.quantity >= 1
 
     def sell(self):
-        # if self.products <= 0:
-        #     # print(f"Company {self.circularity} tried to sell but has no products.")
-        #     return
         self.products -= 1
         self.money += self.price
 
@@ -52,20 +37,29 @@ class CompanyAgent(Agent):
         return MAINTENANCE_COST * (1 + self.circularity)
 
     def production_cost_per_unit(self):
-        return PRODUCTINO_COST_PER_UNIT_SCALE_FACTOR * (1 + self.circularity)
+        return PRODUCTION_COST_PER_UNIT_SCALE_FACTOR * (1 + self.circularity)
     
     def circularity_subsidy(self):
         return CIRCULARITY_SUBSIDY_SCALE_FACTOR * self.circularity
     
     def material_cost_for_quantity(self, quantity):
-        # Check leftovers if you were to take the material from the pool
-
+        # If you have enough in the material pool, there is no cost
         if self.material_pool >= quantity:
             return 0, 0
         else:
             leftover = quantity - self.material_pool
-            
+        
+        # else, the cost is the cost of the necessary material
         return leftover, self.raw_material.cost(leftover)
+    
+    def take_material_from_pool(self, quantity):
+        if self.material_pool >= quantity:
+            self.material_pool -= quantity
+            return 0
+        else:
+            leftover = quantity - self.material_pool
+            self.material_pool = 0
+            return leftover
 
     def variable_costs_for_quantity(self, quantity, take=False):
 
@@ -73,16 +67,9 @@ class CompanyAgent(Agent):
         leftover, expected_material_cost = self.material_cost_for_quantity(quantity)
 
         if take:
-            if self.material_pool >= quantity:
-                leftover = 0
-                self.material_pool -= quantity
-            else:
-                leftover = quantity - self.material_pool
-                self.material_pool = 0
-
+            leftover = self.take_material_from_pool(quantity)
             material_cost = self.raw_material.take_raw_material(leftover)
             assert material_cost == expected_material_cost
-
             self.total_material_purchased += leftover
 
         return production_cost + expected_material_cost
@@ -106,18 +93,18 @@ class CompanyAgent(Agent):
         self.quantity = 0
         self.products = 0
         self.avg_cost_per_product = 0
+
         self.money += self.circularity_subsidy()
 
         fixed_costs = self.fixed_costs_per_year()
         self.money -= fixed_costs
 
-        # if self.total_material_purchased > MATERIAL_PURCHASE_LIMIT:
-        #     return
+        if MATERIAL_PURCHASE_LIMIT is not None and self.total_material_purchased > MATERIAL_PURCHASE_LIMIT:
+            return
 
-        # print(self.price, self.quantity)
         self.get_best_price()
-
         var_costs = self.variable_costs_for_quantity(self.quantity, take=True)
+
         self.money -= var_costs
 
         self.products = self.quantity
@@ -177,38 +164,9 @@ class CompanyAgent(Agent):
             if profit is not None and profit > best_profit:
                 best_price = price
                 best_profit = profit
-
-
-        # price1, quantity1 = self.hyperopt_price_optimizer(with_quantity=True)
-
-        # price1 *= PRICE_CAP_HIGH
-        # quantity1 *= NUM_CONSUMERS * 1.2
-
-        # price2, _ = self.hyperopt_price_optimizer()
-        # price2 *= PRICE_CAP_HIGH
-        # quantity2 = beta * (1 - price2 / b)
         
         self.price = best_price
         self.quantity = int(beta * (1 - best_price / b))
-
-        # profits1, profits2, profits3 = self.test_price(price1, quantity1), self.test_price(price2, quantity2), self.test_price(best_price, self.quantity)
-
-        # self.sol1_prices.append(price1)
-        # self.sol2_prices.append(price2)
-        # self.sol3_prices.append(best_price)
-
-        # self.sol1_quants.append(quantity1)
-        # self.sol2_quants.append(quantity2)
-        # self.sol3_quants.append(self.quantity)
-
-        # self.sol1_profits.append(profits1)
-        # self.sol2_profits.append(profits2)
-        # self.sol3_profits.append(profits3)
-
-        # print("Profits", self.test_price(self.price), self.test_price(price1), self.test_price(price2))
-        # print("Prices", self.price, price1, price2)
-        # print("Quantities", self.quantity, quantity1, quantity2)
-        # print(quantity, self.quantity)
 
     def test_price(self, p, q=None, hyperopt=False):
 
@@ -228,7 +186,6 @@ class CompanyAgent(Agent):
         C = 1 + self.competition
     
         beta = (1.2 * N) / C
-        # beta = N
         if q is None:
             q = beta * (1 - p / b)
     

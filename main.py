@@ -4,8 +4,7 @@ import models.monopoly.model as monopoly
 import models.competition.model as competition
 import models.spatial.model as spatial
 import models.spatial_zones.model as spatial_zones
-from parameters import NUM_CONSUMERS, NUM_COMPANIES
-from utils import compare_solutions
+from parameters import NUM_CONSUMERS, NUM_COMPANIES, NUM_STEPS
 import math
 
 def get_mean_and_std(data):
@@ -15,7 +14,7 @@ def get_mean_and_std(data):
 
 # Number of runs
 n_runs = 5 # Number of runs
-n_steps = 170 # 70  # Number of time steps
+n_steps = NUM_STEPS # 70  # Number of time steps
 
 # Initialize data storage
 n_companies = NUM_COMPANIES
@@ -65,50 +64,6 @@ for run in range(n_runs):
         production_costs_data[run, step, :] = model_data["Production Costs"].iloc[step]
         maintenance_costs_data[run, step, :] = model_data["Maintenance Costs"].iloc[step]
         avg_cost_per_product_data[run, step, :] = model_data["Avg Cost Per Product"].iloc[step]
-
-    # all_price_differences_sol1 = []
-    # all_price_differences_sol2 = []
-    # all_quantity_differences_sol1 = []
-    # all_quantity_differences_sol2 = []
-    # all_profit_differences_sol1 = []
-    # all_profit_differences_sol2 = []
-
-    # for company in model.companies:
-    #     print(f"Company Circularity: {company.circularity}")
-
-    #     # Price Comparison
-    #     price_differences_sol1 = compare_solutions(company.sol3_prices, company.sol1_prices)
-    #     price_differences_sol2 = compare_solutions(company.sol3_prices, company.sol2_prices)
-    #     all_price_differences_sol1.extend(price_differences_sol1)
-    #     all_price_differences_sol2.extend(price_differences_sol2)
-
-    #     # Quantity Comparison
-    #     quantity_differences_sol1 = compare_solutions(company.sol3_quants, company.sol1_quants)
-    #     quantity_differences_sol2 = compare_solutions(company.sol3_quants, company.sol2_quants)
-    #     all_quantity_differences_sol1.extend(quantity_differences_sol1)
-    #     all_quantity_differences_sol2.extend(quantity_differences_sol2)
-
-    #     # Profit Comparison
-    #     profit_differences_sol1 = compare_solutions(company.sol3_profits, company.sol1_profits)
-    #     profit_differences_sol2 = compare_solutions(company.sol3_profits, company.sol2_profits)
-    #     all_profit_differences_sol1.extend(profit_differences_sol1)
-    #     all_profit_differences_sol2.extend(profit_differences_sol2)
-
-    # # now print mean and std of the differences
-    # print("Price Differences Solution 1")
-    # print(np.mean(all_price_differences_sol1), np.std(all_price_differences_sol1))
-    # print("Price Differences Solution 2")
-    # print(np.mean(all_price_differences_sol2), np.std(all_price_differences_sol2))
-    
-    # print("Quantity Differences Solution 1")
-    # print(np.mean(all_quantity_differences_sol1), np.std(all_quantity_differences_sol1))
-    # print("Quantity Differences Solution 2")
-    # print(np.mean(all_quantity_differences_sol2), np.std(all_quantity_differences_sol2))
-
-    # print("Profit Differences Solution 1")
-    # print(np.mean(all_profit_differences_sol1), np.std(all_profit_differences_sol1))
-    # print("Profit Differences Solution 2")
-    # print(np.mean(all_profit_differences_sol2), np.std(all_profit_differences_sol2))
 
 # Calculate mean and std for each company
 time_steps = range(n_steps)
