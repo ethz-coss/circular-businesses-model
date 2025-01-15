@@ -12,7 +12,6 @@ In this agent-based model, I aim to model circular practices in businesses. I sp
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Configuration](#configuration)
 - [Contributing](#contributing)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -40,5 +39,23 @@ In this agent-based model, I aim to model circular practices in businesses. I sp
    ```
    pip install -r requirements.txt
    ```
-3. Update the `parameters.txt` file with desired parameters
-4. Run the `main.py` file.
+
+## Usage
+
+1. Update the `parameters.txt` file with your desired parameters.
+2. Run the `main.py` file.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository, make your changes, and submit a pull request.
+
+## Licensing
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Acknowledgements
+
+1. This framework was developed as part of a study on transitioning to a circular economy.
+2. More details are available in the report `Agent-Based Modelling for the Transition to a Circular Economy: Addressing Market Dynamics and Policy Interventions.pf`
+3. Generative artificial intelligence technologies were used in this project for code generation and report editing.
+
