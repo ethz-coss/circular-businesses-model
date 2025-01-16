@@ -7,6 +7,9 @@ import utils
 class CompanyAgent(Agent):
 
     def __init__(self, model, raw_material, circularity=0, competition=0, color="red"):
+        """
+        Initializes a new company agent.
+        """
         super().__init__(model)
         self.money = 0
         self.raw_material = raw_material
@@ -26,23 +29,35 @@ class CompanyAgent(Agent):
 
         self.color = color
 
-    def has_supply(self):
-        return self.quantity >= 1
-
     def sell(self):
+        """
+        Sells a product and adds the money to the company's account.
+        """
         self.products -= 1
         self.money += self.price
 
     def fixed_costs_per_year(self):
+        """
+        Returns the fixed costs per year for the company.
+        """
         return MAINTENANCE_COST * (1 + self.circularity)
 
     def production_cost_per_unit(self):
+        """
+        Returns the production cost per unit for the company
+        """
         return PRODUCTION_COST_PER_UNIT_SCALE_FACTOR * (1 + self.circularity)
     
     def circularity_subsidy(self):
+        """
+        Returns the circularity subsidy for the company.
+        """
         return CIRCULARITY_SUBSIDY_SCALE_FACTOR * self.circularity
     
     def material_cost_for_quantity(self, quantity):
+        """
+        Returns the cost of the necessary material for a given quantity of products.
+        """
         # If you have enough in the material pool, there is no cost
         if self.material_pool >= quantity:
             return 0, 0
@@ -53,6 +68,9 @@ class CompanyAgent(Agent):
         return leftover, self.raw_material.cost(leftover)
     
     def take_material_from_pool(self, quantity):
+        """
+        Takes material from the material pool and returns the leftover quantity that needs to be purchased.
+        """
         if self.material_pool >= quantity:
             self.material_pool -= quantity
             return 0
@@ -62,7 +80,9 @@ class CompanyAgent(Agent):
             return leftover
 
     def variable_costs_for_quantity(self, quantity, take=False):
-
+        """
+        Returns the variable costs for a given quantity of products. If take is True, the company will take the necessary material from the pool and purchase the other necessary material from the raw supply.
+        """
         production_cost = self.production_cost_per_unit() * quantity
         leftover, expected_material_cost = self.material_cost_for_quantity(quantity)
 
@@ -75,7 +95,9 @@ class CompanyAgent(Agent):
         return production_cost + expected_material_cost
     
     def get_unsold_waste(self):
-
+        """
+        Returns the amount of unsold waste and penalizes the company for it (if there is a waste penalty).
+        """
         unsold_waste = self.quantity * (1 - self.circularity)
         self.money -= unsold_waste * WASTE_PENALTY
 
@@ -83,12 +105,21 @@ class CompanyAgent(Agent):
         return self.total_unsold_waste
     
     def add_unsold_material_to_material_pool(self, unsold):
+        """
+        Adds unsold material to the material pool.
+        """
         self.material_pool += int(unsold * self.circularity)
 
     def add_sold_material_to_material_pool(self, sold):
+        """
+        Adds sold material to the material pool. With a 0.8 degradation factor.
+        """
         self.material_pool += int(sold * self.circularity * 0.8)
 
     def year_start(self):
+        """
+        Starts a new year for the company. Resets the variables and calculates the price and quantity for that time step.
+        """
         self.price = 0
         self.quantity = 0
         self.products = 0
@@ -114,11 +145,16 @@ class CompanyAgent(Agent):
             self.avg_cost_per_product = 0
     
     def year_end(self):
+        """
+        Ends a year for the company. Adds unsold waste to the material pool and adds sold material to the material pool.
+        """
         self.add_unsold_material_to_material_pool(self.products)
         self.add_sold_material_to_material_pool(self.quantity - self.products)
 
     def get_best_price(self):
-
+        """
+        Calculates the best price and quantity for the company based on the closed form solution.
+        """
         if self.material_pool <= 0 and self.raw_material.remaining <= 0:
             self.price = PRICE_CAP_HIGH
             self.quantity = 0
@@ -169,7 +205,9 @@ class CompanyAgent(Agent):
         self.quantity = int(beta * (1 - best_price / b))
 
     def test_price(self, p, q=None, hyperopt=False):
-
+        """
+        Tests a price and quantity for the company and returns the profit.
+        """
         if hyperopt:
             p *= PRICE_CAP_HIGH
             if q is not None:
@@ -194,7 +232,9 @@ class CompanyAgent(Agent):
         return p * s - self.variable_costs_for_quantity(q, take=False)
     
     def hyperopt_price_optimizer(self, with_quantity=False):
-        
+        """
+        Optimizes the price and quantity for the company using hyperopt.
+        """
         # Define the search space for price and quantity
         space = {
             'price': hp.uniform('price', 0, 1)

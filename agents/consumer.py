@@ -4,10 +4,13 @@ import numpy as np
 
 class ConsumerAgent(Agent):
 
-    def __init__(self, model, price_cap, cheapness=1, ecolevel=0, competition=True, spatial=False):
+    def __init__(self, model, price_cap, ecolevel=0, competition=True, spatial=False):
+        """
+        Initializes a new consumer agent. 
+        """
         super().__init__(model)
         self.price_cap = price_cap
-        self.cheapness = cheapness
+        self.ecolevel = ecolevel
         # self.ecolevel = ecolevel
         self.spatial = spatial
         self.competition = competition
@@ -15,7 +18,9 @@ class ConsumerAgent(Agent):
         self.companies = self.model.companies
 
     def normalized_price(self):
-            
+        """
+        Normalizes the prices of the companies with the min-max normalization method.
+        """
         min_price = min([company.price for company in self.companies])
         max_price = max([company.price for company in self.companies])
 
@@ -33,6 +38,9 @@ class ConsumerAgent(Agent):
         ]
     
     def get_companies_within_range(self, range_limit=25):
+        """
+        Get companies within a certain range of the consumer.
+        """
         grid = self.model.grid
 
         neighborhood = grid.get_neighborhood(self.pos, moore=True, include_center=False, radius=range_limit)
@@ -44,22 +52,29 @@ class ConsumerAgent(Agent):
         self.companies = nearby_companies
 
     def get_value_scores(self):
-
+        """
+        Calculate the value scores of the companies based on the ecolevel of the consumer.
+        """
         normalized_prices = self.normalized_price()
 
         return [
-            (1 - self.cheapness) * company.circularity - self.cheapness * norm_price
+            self.ecolevel * company.circularity - (1 - self.ecolevel) * norm_price
             if norm_price is not None else -float('inf')
             for company, norm_price in zip(self.companies, normalized_prices)
         ]
 
     def monopoly_step(self):
+        """
+        Monopoly step where the consumer buys from all companies that meet the price cap.
+        """
         for company in self.companies:
             if company.price <= self.price_cap and company.products > 0:
                 company.sell()
 
     def competition_step(self):
-
+        """
+        Competition step where the consumer buys from a singular company based on the value scores. The company is chosen based on a softmax function with the value scores as input to determine the probabilities.
+        """
         if self.companies == []:
             return
 
@@ -91,7 +106,9 @@ class ConsumerAgent(Agent):
             self.last_company = chosen_company   
 
     def step(self):
-
+        """
+        Consumer step. If competition is turned off, the consumer buys from all companies that meet the price cap. If competition is turned on, the consumer buys from a singular company based on the value scores.
+        """
         if not self.competition:
             self.companies = self.model.companies
             self.monopoly_step()
